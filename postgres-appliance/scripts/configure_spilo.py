@@ -244,6 +244,18 @@ bootstrap:
         recovery_target_inclusive: false
         {{/CLONE_TARGET_INCLUSIVE}}
   {{/CLONE_WITH_WALE}}
+  {{#CLONE_WITH_PGBACKREST}}
+  method: clone_with_pgbackrest
+  clone_with_pgbackrest:
+    {{#CLONE_TARGET_TIME}}
+    command: pgbackrest --stanza={{PGB_STANZA}} --config-path /run/etc --log-level-console=info --delta --type=time --target="{{CLONE_TARGET_TIME}}" restore
+    {{/CLONE_TARGET_TIME}}
+    {{^CLONE_TARGET_TIME}}
+    command: pgbackrest --stanza={{PGB_STANZA}} --config-path /run/etc --log-level-console=info --delta restore
+    {{/CLONE_TARGET_TIME}}
+    keep_existing_recovery_conf: True
+    no_params: True
+  {{/CLONE_WITH_PGBACKREST}}
   {{#CLONE_WITH_BASEBACKUP}}
   method: clone_with_basebackup
   clone_with_basebackup:
@@ -639,7 +651,10 @@ def get_placeholders(provider):
     placeholders['postgresql']['parameters']['archive_command'] = \
         'envdir "{WALE_ENV_DIR}" {WALE_BINARY} wal-push "%p"'.format(**placeholders) \
         if placeholders['USE_WALE'] else '/bin/true'
-
+    placeholders['postgresql']['parameters']['archive_command'] = \
+        '/usr/bin/pgbackrest --config-path /run/etc --stanza={PGB_STANZA} --log-level-file=info archive-push %p'.format(**placeholders) \
+        if placeholders['USE_PGBACKREST'] else '/bin/true'
+        
     if os.path.exists(MEMORY_LIMIT_IN_BYTES_PATH):
         with open(MEMORY_LIMIT_IN_BYTES_PATH) as f:
             os_memory_mb = int(f.read()) / 1048576

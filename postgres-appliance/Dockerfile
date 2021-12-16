@@ -391,12 +391,15 @@ RUN export DEBIAN_FRONTEND=noninteractive \
 # Install wal-g
 COPY --from=dependencies-builder /builddeps/wal-g /usr/local/bin/
 
-# Install patroni and wal-e
+# Install patroni, wal-e, and pgbackrest
 ENV PATRONIVERSION=2.1.2
 ENV WALE_VERSION=1.1.1
+ENV PGB_CONFIG=/home/postgres/pgdata/backup/pgbackrest.conf
+ENV PGB_REPO1_CHIPHER_TYPE=aes-256-cbc
+ENV PGSOCKET=/var/run/postgresql
 RUN export DEBIAN_FRONTEND=noninteractive \
     && set -ex \
-    && BUILD_PACKAGES="python3-pip python3-wheel python3-dev git patchutils binutils" \
+    && BUILD_PACKAGES="python3-pip python3-wheel python3-dev git patchutils binutils pgbackrest" \
     && apt-get update \
 \
     # install most of the patroni dependencies from ubuntu packages
@@ -540,6 +543,6 @@ RUN sed -i "s|/var/lib/postgresql.*|$PGHOME:/bin/bash|" /etc/passwd \
         fi
 
 COPY scripts bootstrap major_upgrade /scripts/
-COPY launch.sh /
+COPY launch.sh pgbackrest_entrypoint.sh /
 
 CMD ["/bin/sh", "/launch.sh", "init"]

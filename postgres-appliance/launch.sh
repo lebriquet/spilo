@@ -48,6 +48,8 @@ elif python3 /scripts/configure_spilo.py all; then
     fi
 fi
 
+[ ! -z "${USE_PGBACKREST}" ] && /pgbackrest_entrypoint.sh &
+
 sv_stop() {
     sv -w 86400 stop patroni
     sv -w 86400 stop /etc/service/*
